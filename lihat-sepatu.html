@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ShoeperCling.SC — Foto Sepatu Masuk</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" class="back-link">&larr; Buat tiket baru</a>
+  <div id="content">
+    <div class="state-center">
+      <div class="spinner"></div>
+      <p>Memuat foto…</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function dots(flip) {
+  const spans = new Array(24).fill('<span></span>').join("");
+  return `<div class="ticket-dots${flip ? " flip" : ""}">${spans}</div>`;
+}
+
+async function load() {
+  const params = new URLSearchParams(window.location.search);
+  const id = params.get("id");
+  const content = document.getElementById("content");
+
+  if (!id) {
+    content.innerHTML = `<div class="state-center"><h2>Link tidak valid</h2><p>ID tiket tidak ditemukan di URL.</p></div>`;
+    return;
+  }
+
+  try {
+    const { data: ticket, error: ticketErr } = await supabaseClient
+      .from("tickets")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (ticketErr || !ticket) throw new Error("not found");
+
+    const { data: photos, error: photoErr } = await supabaseClient
+      .from("photos")
+      .select("*")
+      .eq("ticket_id", id)
+      .order("created_at", { ascending: true });
+    if (photoErr) throw photoErr;
+
+    const tanggal = new Date(ticket.created_at).toLocaleString("id-ID", {
+      dateStyle: "long",
+      timeStyle: "short",
+    });
+
+    content.innerHTML = `
+      <header class="brand" style="flex-direction:column; text-align:center;">
+        <div class="logo-circle" style="width:56px;height:56px;margin-bottom:8px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8ED2F0" stroke-width="1.8">
+            <path d="M2 14c2-2 4-2 6-1s4 3 7 2 5-3 7-1" stroke-linecap="round"/>
+            <path d="M2 17c2-2 4-2 6-1s4 3 7 2 5-3 7-1" stroke-linecap="round"/>
+            <path d="M6 10l2-3c1-1.2 2.2-1.6 3.6-1.2l5 1.5c1 .3 1.7 1 2 2l1 3H6z" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <h1>Foto Sepatu Masuk</h1>
+        <p class="eyebrow" style="margin-top:4px;">Bukti kondisi sebelum dicuci</p>
+      </header>
+
+      ${dots(false)}
+      <div class="ticket-info">
+        <div>
+          <p class="k">Customer</p>
+          <p class="v">${escapeHtml(ticket.nama_customer)}</p>
+        </div>
+        <div>
+          <p class="k">Kode tiket</p>
+          <p class="v" style="font-family:monospace;">${escapeHtml(ticket.kode_sepatu)}</p>
+        </div>
+        <div class="full">
+          <p class="k">Diambil</p>
+          <p class="v">${tanggal}</p>
+        </div>
+      </div>
+      ${dots(true)}
+
+      <div class="view-grid">
+        ${photos.map(p => `
+          <figure>
+            <img src="${p.url_foto}" alt="${escapeHtml(p.angle || "")}" loading="lazy" />
+            <figcaption>${escapeHtml(p.angle || "")}</figcaption>
+          </figure>
+        `).join("")}
+      </div>
+
+      ${photos.length === 0 ? `<p class="help-text">Belum ada foto untuk tiket ini.</p>` : ""}
+
+      <button class="secondary" id="copyBtn" style="margin-top:24px;">Salin link tiket ini</button>
+    `;
+
+    document.getElementById("copyBtn").addEventListener("click", () => {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        const btn = document.getElementById("copyBtn");
+        btn.textContent = "Link disalin ✓";
+        setTimeout(() => (btn.textContent = "Salin link tiket ini"), 1600);
+      });
+    });
+  } catch (e) {
+    console.error(e);
+    content.innerHTML = `<div class="state-center"><h2>Tiket tidak ditemukan</h2><p>Link mungkin salah atau tiket sudah dihapus.</p></div>`;
+  }
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+load();
+</script>
+</body>
+</html>

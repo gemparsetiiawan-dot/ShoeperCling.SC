@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ShoeperCling.SC — Foto Sepatu Masuk</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header class="brand">
+    <div class="logo-circle">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8ED2F0" stroke-width="1.8">
+        <path d="M2 14c2-2 4-2 6-1s4 3 7 2 5-3 7-1" stroke-linecap="round"/>
+        <path d="M2 17c2-2 4-2 6-1s4 3 7 2 5-3 7-1" stroke-linecap="round"/>
+        <path d="M6 10l2-3c1-1.2 2.2-1.6 3.6-1.2l5 1.5c1 .3 1.7 1 2 2l1 3H6z" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div>
+      <p class="eyebrow">ShoeperCling.SC · Intake</p>
+      <h1>Foto Sepatu Masuk</h1>
+    </div>
+  </header>
+
+  <div class="card">
+    <label for="nama">Nama customer</label>
+    <input type="text" id="nama" placeholder="cth. Rangga" />
+    <label for="kode">Kode / nomor tiket sepatu</label>
+    <input type="text" id="kode" placeholder="cth. SC-0231" />
+  </div>
+
+  <p class="section-label">Ambil foto tiap sisi</p>
+  <div class="photo-grid" id="photoGrid"></div>
+
+  <p id="errorText" class="error-text" style="display:none;"></p>
+
+  <button class="primary" id="submitBtn">Simpan & buat link tiket</button>
+  <p class="help-text">Link tiket bisa dibuka siapa saja yang menerima link — jangan sertakan data pribadi sensitif di catatan.</p>
+</div>
+
+<script>
+const ANGLES = ["Atas (pasangan)", "Samping kiri", "Samping kanan", "Sol / alas", "Detail noda", "Label / merk"];
+const photoData = {}; // angle -> File
+
+const grid = document.getElementById("photoGrid");
+ANGLES.forEach((angle) => {
+  const slot = document.createElement("div");
+  slot.className = "photo-slot";
+  slot.innerHTML = `
+    <input type="file" accept="image/*" capture="environment" />
+    <div class="placeholder">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E8BB0" stroke-width="1.8"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2"/></svg>
+      <span>${angle}</span>
+    </div>
+  `;
+  const input = slot.querySelector("input");
+  slot.addEventListener("click", () => input.click());
+  input.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    photoData[angle] = file;
+    const reader = new FileReader();
+    reader.onload = () => {
+      slot.innerHTML = `
+        <img src="${reader.result}" alt="${angle}" />
+        <span class="tag">${angle}</span>
+        <button class="remove" type="button">×</button>
+      `;
+      slot.querySelector(".remove").addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        delete photoData[angle];
+        slot.outerHTML = slot.outerHTML; // will be rebuilt below
+        location.reload(); // simplest safe reset for this slot's listeners
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+  grid.appendChild(slot);
+});
+
+function genId() {
+  const rand = Math.random().toString(36).slice(2, 10);
+  const ts = Date.now().toString(36);
+  return `${ts}${rand}`;
+}
+
+function showError(msg) {
+  const el = document.getElementById("errorText");
+  el.textContent = msg;
+  el.style.display = msg ? "block" : "none";
+}
+
+document.getElementById("submitBtn").addEventListener("click", async () => {
+  showError("");
+  const angles = Object.keys(photoData);
+  if (angles.length === 0) {
+    showError("Tambahkan minimal 1 foto sebelum menyimpan.");
+    return;
+  }
+
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Menyimpan…";
+
+  try {
+    const id = genId();
+    const namaCustomer = document.getElementById("nama").value.trim() || "Tanpa nama";
+    const kodeSepatu = document.getElementById("kode").value.trim() || "-";
+
+    // 1. insert tiket
+    const { error: ticketErr } = await supabaseClient
+      .from("tickets")
+      .insert({ id, nama_customer: namaCustomer, kode_sepatu: kodeSepatu });
+    if (ticketErr) throw ticketErr;
+
+    // 2. upload tiap foto ke storage lalu simpan url-nya
+    for (const angle of angles) {
+      const file = photoData[angle];
+      const path = `${id}/${angle.replace(/[^a-z0-9]/gi, "-")}-${Date.now()}.jpg`;
+      const { error: uploadErr } = await supabaseClient.storage
+        .from("foto-sepatu")
+        .upload(path, file);
+      if (uploadErr) throw uploadErr;
+
+      const { data: publicUrlData } = supabaseClient.storage
+        .from("foto-sepatu")
+        .getPublicUrl(path);
+
+      const { error: photoErr } = await supabaseClient
+        .from("photos")
+        .insert({ ticket_id: id, angle, url_foto: publicUrlData.publicUrl });
+      if (photoErr) throw photoErr;
+    }
+
+    // 3. redirect ke halaman lihat + link siap dibagikan
+    window.location.href = `lihat-sepatu.html?id=${id}`;
+  } catch (e) {
+    console.error(e);
+    showError("Gagal menyimpan: " + (e.message || "coba lagi."));
+    btn.disabled = false;
+    btn.textContent = "Simpan & buat link tiket";
+  }
+});
+</script>
+</body>
+</html>
