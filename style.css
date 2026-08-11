@@ -1,20 +1,21 @@
 :root {
-  --navy: #0E2A3D;
-  --navy-light: #123449;
-  --border: #1E4E68;
-  --blue: #3E8BB0;
-  --blue-bright: #8ED2F0;
-  --text: #F4FAFD;
-  --muted: #5D93AE;
-  --muted-dim: #4A7188;
-  --danger: #FF9B85;
+  --bg: #EAF5FC;
+  --card: #FFFFFF;
+  --border: #CBE6F5;
+  --blue: #2E8BC0;
+  --blue-dark: #1C6EA4;
+  --text: #123449;
+  --muted: #5D8AA6;
+  --muted-dim: #93B7CC;
+  --danger: #D9534F;
+  --btn-text: #FFFFFF;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  background: var(--navy);
+  background: var(--bg);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text);
 }
@@ -36,7 +37,8 @@ header.brand {
   width: 44px;
   height: 44px;
   border-radius: 999px;
-  background: var(--navy-light);
+  background: var(--card);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,14 +58,16 @@ h1 {
   font-weight: 600;
   margin: 0;
   line-height: 1.2;
+  color: var(--text);
 }
 
 .card {
-  background: var(--navy-light);
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
+  box-shadow: 0 2px 10px rgba(46,139,192,0.06);
 }
 
 label {
@@ -73,19 +77,20 @@ label {
   margin-bottom: 6px;
 }
 
-input[type="text"] {
+input[type="text"], input[type="date"] {
   width: 100%;
-  background: var(--navy);
+  background: #F3FAFE;
   color: var(--text);
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 15px;
   margin-bottom: 16px;
   outline: none;
 }
-input[type="text"]:focus { border-color: var(--blue); }
+input[type="text"]:focus, input[type="date"]:focus { border-color: var(--blue); }
 input[type="text"]::placeholder { color: var(--muted-dim); }
+input[type="date"] { color-scheme: light; }
 
 .section-label {
   font-size: 12px;
@@ -108,7 +113,7 @@ input[type="text"]::placeholder { color: var(--muted-dim); }
   border-radius: 12px;
   overflow: hidden;
   border: 1.5px dashed var(--border);
-  background: var(--navy);
+  background: var(--card);
   cursor: pointer;
 }
 .photo-slot input[type="file"] { display: none; }
@@ -136,7 +141,7 @@ input[type="text"]::placeholder { color: var(--muted-dim); }
   bottom: 6px;
   left: 6px;
   font-size: 9.5px;
-  background: rgba(0,0,0,0.55);
+  background: rgba(18,52,73,0.65);
   color: white;
   padding: 2px 6px;
   border-radius: 5px;
@@ -148,7 +153,7 @@ input[type="text"]::placeholder { color: var(--muted-dim); }
   width: 22px;
   height: 22px;
   border-radius: 999px;
-  background: rgba(0,0,0,0.6);
+  background: rgba(18,52,73,0.65);
   color: white;
   border: none;
   font-size: 13px;
@@ -158,7 +163,7 @@ input[type="text"]::placeholder { color: var(--muted-dim); }
 button.primary {
   width: 100%;
   background: var(--blue);
-  color: var(--navy);
+  color: var(--btn-text);
   font-weight: 600;
   font-size: 15px;
   border: none;
@@ -167,12 +172,12 @@ button.primary {
   cursor: pointer;
 }
 button.primary:disabled { opacity: 0.6; cursor: default; }
-button.primary:hover:not(:disabled) { background: var(--blue-bright); }
+button.primary:hover:not(:disabled) { background: var(--blue-dark); }
 
 button.secondary {
   width: 100%;
-  background: transparent;
-  color: var(--blue-bright);
+  background: var(--card);
+  color: var(--blue-dark);
   font-weight: 500;
   font-size: 14px;
   border: 1px solid var(--border);
@@ -218,12 +223,12 @@ button.secondary {
   padding: 0 8px;
 }
 .ticket-dots span {
-  width: 6px; height: 6px; border-radius: 999px; background: var(--navy);
+  width: 6px; height: 6px; border-radius: 999px; background: var(--bg);
 }
 .ticket-dots.flip { transform: rotate(180deg); }
 
 .ticket-info {
-  background: var(--navy-light);
+  background: var(--card);
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
   padding: 16px 20px;
@@ -243,6 +248,7 @@ button.secondary {
   font-size: 14.5px;
   font-weight: 500;
   margin: 0;
+  color: var(--text);
 }
 
 .view-grid {
@@ -257,7 +263,7 @@ button.secondary {
   overflow: hidden;
   border: 1px solid var(--border);
   position: relative;
-  background: var(--navy);
+  background: var(--card);
 }
 .view-grid img {
   width: 100%;
@@ -270,7 +276,7 @@ button.secondary {
   bottom: 6px;
   left: 6px;
   font-size: 10px;
-  background: rgba(0,0,0,0.55);
+  background: rgba(18,52,73,0.65);
   color: white;
   padding: 2px 6px;
   border-radius: 5px;
@@ -290,7 +296,7 @@ button.secondary {
 .spinner {
   width: 22px; height: 22px;
   border: 2.5px solid var(--border);
-  border-top-color: var(--blue-bright);
+  border-top-color: var(--blue);
   border-radius: 999px;
   margin: 0 auto 12px;
   animation: spin 0.8s linear infinite;
