@@ -75,7 +75,6 @@ async function load() {
         ${groups[label].map(p => `
           <figure>
             <img src="${p.url_foto}" alt="${escapeHtml(p.angle || "")}" loading="lazy" />
-            <figcaption>${escapeHtml(p.angle || "")}</figcaption>
           </figure>
         `).join("")}
       </div>
