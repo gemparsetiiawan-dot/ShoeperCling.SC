@@ -38,6 +38,8 @@
     </div>
   </header>
 
+  <a href="riwayat.html" class="back-link" style="margin-bottom:20px;">Lihat riwayat tiket &rsaquo;</a>
+
   <div class="card">
     <label for="nama">Nama customer</label>
     <input type="text" id="nama" placeholder="cth. Rangga" />
@@ -57,13 +59,6 @@
 
   <button class="primary" id="submitBtn">Simpan & buat link tiket</button>
   <p class="help-text">Link tiket bisa dibuka siapa saja yang menerima link — jangan sertakan data pribadi sensitif di catatan.</p>
-
-  <div id="resultCard" class="card" style="display:none; margin-top:20px;">
-    <p class="section-label" style="margin-bottom:10px;">Tiket berhasil disimpan</p>
-    <div id="resultLinkBox" style="background:#F3FAFE; border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:13px; color:var(--text); word-break:break-all; margin-bottom:12px;"></div>
-    <button class="secondary" id="copyResultBtn">Salin link tiket</button>
-    <button class="primary" id="newTicketBtn" style="margin-top:10px;">+ Buat tiket baru</button>
-  </div>
 </div>
 
 <script>
@@ -270,25 +265,8 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
       }
     }
 
-    // 3. tampilkan link hasil di halaman yang sama
-    const ticketUrl = `${window.location.origin}${window.location.pathname.replace("index.html", "")}lihat-sepatu.html?id=${id}`;
-    document.getElementById("resultLinkBox").textContent = ticketUrl;
-    document.getElementById("resultCard").style.display = "block";
-    document.getElementById("resultCard").scrollIntoView({ behavior: "smooth" });
-
-    btn.disabled = false;
-    btn.textContent = "Simpan & buat link tiket";
-
-    document.getElementById("copyResultBtn").onclick = () => {
-      navigator.clipboard.writeText(ticketUrl).then(() => {
-        const copyBtn = document.getElementById("copyResultBtn");
-        copyBtn.textContent = "Link disalin ✓";
-        setTimeout(() => (copyBtn.textContent = "Salin link tiket"), 1600);
-      });
-    };
-    document.getElementById("newTicketBtn").onclick = () => {
-      window.location.reload();
-    };
+    // 3. redirect ke halaman lihat
+    window.location.href = `lihat-sepatu.html?id=${id}`;
   } catch (e) {
     console.error(e);
     showError("Gagal menyimpan: " + (e.message || "coba lagi."));

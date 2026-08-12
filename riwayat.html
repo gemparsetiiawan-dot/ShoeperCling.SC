@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ShoeperCling.SC — Riwayat Tiket</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+</head>
+<body>
+<div class="wrap" id="loginScreen">
+  <header class="brand">
+    <div class="logo-circle">
+      <img src="logo.png" alt="ShoeperCling.SC" style="width:100%;height:100%;object-fit:cover;border-radius:999px;" />
+    </div>
+    <div>
+      <p class="eyebrow">ShoeperCling.SC · Admin</p>
+      <h1>Masuk Halaman Admin</h1>
+    </div>
+  </header>
+  <div class="card">
+    <label for="adminPass">Password staff</label>
+    <input type="password" id="adminPass" placeholder="Masukkan password" />
+    <p id="loginError" class="error-text" style="display:none;">Password salah, coba lagi.</p>
+    <button class="primary" id="loginBtn">Masuk</button>
+  </div>
+</div>
+
+<div class="wrap" id="riwayatScreen" style="display:none;">
+  <a href="index.html" class="back-link">&larr; Buat tiket baru</a>
+  <header class="brand">
+    <div class="logo-circle">
+      <img src="logo.png" alt="ShoeperCling.SC" style="width:100%;height:100%;object-fit:cover;border-radius:999px;" />
+    </div>
+    <div>
+      <p class="eyebrow">ShoeperCling.SC · Admin</p>
+      <h1>Riwayat Tiket</h1>
+    </div>
+  </header>
+
+  <input type="text" id="searchBox" placeholder="Cari nama customer atau kode tiket…" style="margin-bottom:16px;" />
+
+  <div id="listArea">
+    <div class="state-center">
+      <div class="spinner"></div>
+      <p>Memuat riwayat…</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const ADMIN_PASSWORD = "cleanshoes";
+const loginScreen = document.getElementById("loginScreen");
+const riwayatScreen = document.getElementById("riwayatScreen");
+
+if (sessionStorage.getItem("sc_admin_ok") === "1") {
+  loginScreen.style.display = "none";
+  riwayatScreen.style.display = "block";
+  loadRiwayat();
+}
+
+document.getElementById("loginBtn").addEventListener("click", tryLogin);
+document.getElementById("adminPass").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") tryLogin();
+});
+
+function tryLogin() {
+  const input = document.getElementById("adminPass").value;
+  if (input === ADMIN_PASSWORD) {
+    sessionStorage.setItem("sc_admin_ok", "1");
+    loginScreen.style.display = "none";
+    riwayatScreen.style.display = "block";
+    loadRiwayat();
+  } else {
+    document.getElementById("loginError").style.display = "block";
+  }
+}
+
+let allTickets = [];
+
+async function loadRiwayat() {
+  const listArea = document.getElementById("listArea");
+  try {
+    const { data: tickets, error } = await supabaseClient
+      .from("tickets")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw error;
+
+    allTickets = tickets || [];
+    renderList(allTickets);
+
+    document.getElementById("searchBox").addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      const filtered = allTickets.filter(t =>
+        (t.nama_customer || "").toLowerCase().includes(q) ||
+        (t.kode_sepatu || "").toLowerCase().includes(q)
+      );
+      renderList(filtered);
+    });
+  } catch (e) {
+    console.error(e);
+    listArea.innerHTML = `<div class="state-center"><h2>Gagal memuat riwayat</h2><p>${escapeHtml(e.message || "")}</p></div>`;
+  }
+}
+
+function renderList(tickets) {
+  const listArea = document.getElementById("listArea");
+  if (tickets.length === 0) {
+    listArea.innerHTML = `<div class="state-center"><h2>Belum ada tiket</h2><p>Tiket yang kamu simpan akan muncul di sini.</p></div>`;
+    return;
+  }
+
+  listArea.innerHTML = tickets.map(t => {
+    const tanggal = t.tanggal_masuk
+      ? new Date(t.tanggal_masuk + "T00:00:00").toLocaleDateString("id-ID", { dateStyle: "medium" })
+      : new Date(t.created_at).toLocaleDateString("id-ID", { dateStyle: "medium" });
+    return `
+      <a href="lihat-sepatu.html?id=${encodeURIComponent(t.id)}" style="text-decoration:none;">
+        <div class="card" style="margin-bottom:12px; padding:16px 18px;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+            <div>
+              <p class="v" style="font-size:15.5px; margin-bottom:2px;">${escapeHtml(t.nama_customer)}</p>
+              <p class="k" style="margin:0;">${escapeHtml(t.kode_sepatu || "-")} · ${tanggal}</p>
+            </div>
+            <span style="color:var(--blue); font-size:18px;">&rsaquo;</span>
+          </div>
+        </div>
+      </a>
+    `;
+  }).join("");
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+</script>
+</body>
+</html>
