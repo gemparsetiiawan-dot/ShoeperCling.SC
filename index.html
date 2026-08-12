@@ -9,7 +9,25 @@
 <script src="supabase-config.js"></script>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="loginScreen">
+  <header class="brand">
+    <div class="logo-circle">
+      <img src="logo.png" alt="ShoeperCling.SC" style="width:100%;height:100%;object-fit:cover;border-radius:999px;" />
+    </div>
+    <div>
+      <p class="eyebrow">ShoeperCling.SC · Admin</p>
+      <h1>Masuk Halaman Admin</h1>
+    </div>
+  </header>
+  <div class="card">
+    <label for="adminPass">Password staff</label>
+    <input type="password" id="adminPass" placeholder="Masukkan password" />
+    <p id="loginError" class="error-text" style="display:none;">Password salah, coba lagi.</p>
+    <button class="primary" id="loginBtn">Masuk</button>
+  </div>
+</div>
+
+<div class="wrap" id="adminScreen" style="display:none;">
   <header class="brand">
     <div class="logo-circle">
       <img src="logo.png" alt="ShoeperCling.SC" style="width:100%;height:100%;object-fit:cover;border-radius:999px;" />
@@ -42,6 +60,34 @@
 </div>
 
 <script>
+// ============ Gerbang password admin ============
+const ADMIN_PASSWORD = "cleanshoes"; // ganti sendiri kapan saja
+
+const loginScreen = document.getElementById("loginScreen");
+const adminScreen = document.getElementById("adminScreen");
+
+if (sessionStorage.getItem("sc_admin_ok") === "1") {
+  loginScreen.style.display = "none";
+  adminScreen.style.display = "block";
+}
+
+document.getElementById("loginBtn").addEventListener("click", tryLogin);
+document.getElementById("adminPass").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") tryLogin();
+});
+
+function tryLogin() {
+  const input = document.getElementById("adminPass").value;
+  if (input === ADMIN_PASSWORD) {
+    sessionStorage.setItem("sc_admin_ok", "1");
+    loginScreen.style.display = "none";
+    adminScreen.style.display = "block";
+  } else {
+    document.getElementById("loginError").style.display = "block";
+  }
+}
+// ============ Selesai gerbang password ============
+
 const ANGLES = ["Atas (pasangan)", "Samping kiri", "Samping kanan", "Sol / alas", "Detail noda", "Label / merk"];
 let shoeCounter = 0;
 const shoes = {}; // shoeId -> { label: string, photos: {angle: File} }
