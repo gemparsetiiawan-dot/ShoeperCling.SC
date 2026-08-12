@@ -117,19 +117,51 @@ function renderList(tickets) {
       ? new Date(t.tanggal_masuk + "T00:00:00").toLocaleDateString("id-ID", { dateStyle: "medium" })
       : new Date(t.created_at).toLocaleDateString("id-ID", { dateStyle: "medium" });
     return `
-      <a href="lihat-sepatu.html?id=${encodeURIComponent(t.id)}" style="text-decoration:none;">
-        <div class="card" style="margin-bottom:12px; padding:16px 18px;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <div>
-              <p class="v" style="font-size:15.5px; margin-bottom:2px;">${escapeHtml(t.nama_customer)}</p>
-              <p class="k" style="margin:0;">${escapeHtml(t.kode_sepatu || "-")} · ${tanggal}</p>
-            </div>
-            <span style="color:var(--blue); font-size:18px;">&rsaquo;</span>
-          </div>
+      <div class="card" style="margin-bottom:12px; padding:16px 18px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+          <a href="lihat-sepatu.html?id=${encodeURIComponent(t.id)}" style="text-decoration:none; flex:1;">
+            <p class="v" style="font-size:15.5px; margin-bottom:2px;">${escapeHtml(t.nama_customer)}</p>
+            <p class="k" style="margin:0;">${escapeHtml(t.kode_sepatu || "-")} · ${tanggal}</p>
+          </a>
+          <button class="delete-ticket-btn" data-id="${escapeHtml(t.id)}" data-nama="${escapeHtml(t.nama_customer)}" style="background:none; border:1px solid var(--danger); color:var(--danger); border-radius:8px; padding:6px 10px; font-size:12px; cursor:pointer; white-space:nowrap;">Hapus</button>
         </div>
-      </a>
+      </div>
     `;
   }).join("");
+
+  document.querySelectorAll(".delete-ticket-btn").forEach((btn) => {
+    btn.addEventListener("click", () => handleDelete(btn.dataset.id, btn.dataset.nama, btn));
+  });
+}
+
+async function handleDelete(ticketId, namaCustomer, btnEl) {
+  const confirmed = confirm(`Hapus tiket "${namaCustomer}" beserta semua fotonya? Tindakan ini tidak bisa dibatalkan.`);
+  if (!confirmed) return;
+
+  btnEl.disabled = true;
+  btnEl.textContent = "Menghapus…";
+
+  try {
+    // 1. hapus file foto di storage
+    const { data: files } = await supabaseClient.storage.from("foto-sepatu").list(ticketId);
+    if (files && files.length > 0) {
+      const paths = files.map(f => `${ticketId}/${f.name}`);
+      await supabaseClient.storage.from("foto-sepatu").remove(paths);
+    }
+
+    // 2. hapus baris foto & tiket di database (photos ikut terhapus karena cascade)
+    const { error } = await supabaseClient.from("tickets").delete().eq("id", ticketId);
+    if (error) throw error;
+
+    // 3. update tampilan
+    allTickets = allTickets.filter(t => t.id !== ticketId);
+    renderList(allTickets);
+  } catch (e) {
+    console.error(e);
+    alert("Gagal menghapus: " + (e.message || "coba lagi."));
+    btnEl.disabled = false;
+    btnEl.textContent = "Hapus";
+  }
 }
 
 function escapeHtml(str) {
