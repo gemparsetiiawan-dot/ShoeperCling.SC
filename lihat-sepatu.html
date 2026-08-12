@@ -114,7 +114,34 @@ async function load() {
       ${groupsHtml}
 
       ${photos.length === 0 ? `<p class="help-text">Belum ada foto untuk tiket ini.</p>` : ""}
+
+      <button class="secondary" id="copyBtn" style="margin-top:24px;">Bagikan link tiket</button>
     `;
+
+    const shareBtn = document.getElementById("copyBtn");
+    const shareUrl = window.location.href;
+    const shareData = {
+      title: "ShoeperCling.SC — Foto Sepatu Masuk",
+      text: `Foto sepatu masuk untuk ${ticket.nama_customer} (${ticket.kode_sepatu})`,
+      url: shareUrl,
+    };
+
+    shareBtn.addEventListener("click", async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share(shareData);
+          return;
+        } catch (e) {
+          // orang batal share, nggak masalah, lanjut aja tanpa fallback
+          return;
+        }
+      }
+      // fallback: browser tidak support share sheet, langsung salin ke clipboard
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        shareBtn.textContent = "Link disalin ✓";
+        setTimeout(() => (shareBtn.textContent = "Bagikan link tiket"), 1600);
+      });
+    });
   } catch (e) {
     console.error(e);
     content.innerHTML = `<div class="state-center"><h2>Tiket tidak ditemukan</h2><p>Link mungkin salah atau tiket sudah dihapus.</p></div>`;
