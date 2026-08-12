@@ -23,14 +23,17 @@
   <div class="card">
     <label for="nama">Nama customer</label>
     <input type="text" id="nama" placeholder="cth. Rangga" />
-    <label for="kode">Kode / nomor tiket sepatu</label>
+    <label for="kode">Kode / nomor tiket</label>
     <input type="text" id="kode" placeholder="cth. SC-0231" />
     <label for="tanggal">Tanggal sepatu masuk</label>
     <input type="date" id="tanggal" />
   </div>
 
-  <p class="section-label">Ambil foto tiap sisi</p>
-  <div class="photo-grid" id="photoGrid"></div>
+  <div id="shoeBlocks"></div>
+
+  <button type="button" id="addShoeBtn" class="secondary" style="margin-bottom:20px;">
+    + Tambah pasang sepatu
+  </button>
 
   <p id="errorText" class="error-text" style="display:none;"></p>
 
@@ -40,29 +43,96 @@
 
 <script>
 const ANGLES = ["Atas (pasangan)", "Samping kiri", "Samping kanan", "Sol / alas", "Detail noda", "Label / merk"];
-const photoData = {}; // angle -> File
+let shoeCounter = 0;
+const shoes = {}; // shoeId -> { label: string, photos: {angle: File} }
 
-// default tanggal ke hari ini
 const tanggalInput = document.getElementById("tanggal");
 tanggalInput.value = new Date().toISOString().slice(0, 10);
 
-const grid = document.getElementById("photoGrid");
-ANGLES.forEach((angle) => {
-  const slot = document.createElement("div");
-  slot.className = "photo-slot";
+const shoeBlocksEl = document.getElementById("shoeBlocks");
+
+function addShoeBlock() {
+  shoeCounter += 1;
+  const shoeId = `shoe-${shoeCounter}`;
+  shoes[shoeId] = { label: "", photos: {} };
+
+  const block = document.createElement("div");
+  block.className = "card";
+  block.dataset.shoeId = shoeId;
+  block.innerHTML = `
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+      <p class="section-label" style="margin:0;">Sepatu #${shoeCounter}</p>
+      ${shoeCounter > 1 ? `<button type="button" class="remove-shoe-btn" style="background:none;border:none;color:var(--danger);font-size:12px;cursor:pointer;">Hapus</button>` : ""}
+    </div>
+    <label>Nama / jenis sepatu (opsional)</label>
+    <input type="text" class="shoe-label-input" placeholder="cth. Vans merah" />
+    <div class="photo-grid shoe-photo-grid" style="margin-bottom:0;"></div>
+  `;
+  shoeBlocksEl.appendChild(block);
+
+  const labelInput = block.querySelector(".shoe-label-input");
+  labelInput.addEventListener("input", () => {
+    shoes[shoeId].label = labelInput.value.trim();
+  });
+
+  const grid = block.querySelector(".shoe-photo-grid");
+  ANGLES.forEach((angle) => {
+    const slot = document.createElement("div");
+    slot.className = "photo-slot";
+    slot.innerHTML = `
+      <input type="file" accept="image/*" capture="environment" />
+      <div class="placeholder">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E8BC0" stroke-width="1.8"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2"/></svg>
+        <span>${angle}</span>
+      </div>
+    `;
+    const input = slot.querySelector("input");
+    slot.addEventListener("click", () => input.click());
+    input.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      shoes[shoeId].photos[angle] = file;
+      const reader = new FileReader();
+      reader.onload = () => {
+        slot.innerHTML = `
+          <img src="${reader.result}" alt="${angle}" />
+          <span class="tag">${angle}</span>
+          <button class="remove" type="button">×</button>
+        `;
+        slot.querySelector(".remove").addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          delete shoes[shoeId].photos[angle];
+          rebuildEmptySlot(slot, angle, shoeId);
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+    grid.appendChild(slot);
+  });
+
+  const removeBtn = block.querySelector(".remove-shoe-btn");
+  if (removeBtn) {
+    removeBtn.addEventListener("click", () => {
+      delete shoes[shoeId];
+      block.remove();
+    });
+  }
+}
+
+function rebuildEmptySlot(slot, angle, shoeId) {
   slot.innerHTML = `
     <input type="file" accept="image/*" capture="environment" />
     <div class="placeholder">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3E8BB0" stroke-width="1.8"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2"/></svg>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2E8BC0" stroke-width="1.8"><path d="M4 8h3l1.5-2h7L17 8h3v11H4z" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2"/></svg>
       <span>${angle}</span>
     </div>
   `;
   const input = slot.querySelector("input");
-  slot.addEventListener("click", () => input.click());
+  slot.onclick = () => input.click();
   input.addEventListener("change", (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    photoData[angle] = file;
+    shoes[shoeId].photos[angle] = file;
     const reader = new FileReader();
     reader.onload = () => {
       slot.innerHTML = `
@@ -72,15 +142,16 @@ ANGLES.forEach((angle) => {
       `;
       slot.querySelector(".remove").addEventListener("click", (ev) => {
         ev.stopPropagation();
-        delete photoData[angle];
-        slot.outerHTML = slot.outerHTML; // will be rebuilt below
-        location.reload(); // simplest safe reset for this slot's listeners
+        delete shoes[shoeId].photos[angle];
+        rebuildEmptySlot(slot, angle, shoeId);
       });
     };
     reader.readAsDataURL(file);
   });
-  grid.appendChild(slot);
-});
+}
+
+document.getElementById("addShoeBtn").addEventListener("click", addShoeBlock);
+addShoeBlock(); // mulai dengan 1 blok sepatu
 
 function genId() {
   const rand = Math.random().toString(36).slice(2, 10);
@@ -96,8 +167,9 @@ function showError(msg) {
 
 document.getElementById("submitBtn").addEventListener("click", async () => {
   showError("");
-  const angles = Object.keys(photoData);
-  if (angles.length === 0) {
+  const shoeIds = Object.keys(shoes);
+  const totalPhotos = shoeIds.reduce((sum, id) => sum + Object.keys(shoes[id].photos).length, 0);
+  if (totalPhotos === 0) {
     showError("Tambahkan minimal 1 foto sebelum menyimpan.");
     return;
   }
@@ -118,26 +190,34 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
       .insert({ id, nama_customer: namaCustomer, kode_sepatu: kodeSepatu, tanggal_masuk: tanggalMasuk });
     if (ticketErr) throw ticketErr;
 
-    // 2. upload tiap foto ke storage lalu simpan url-nya
-    for (const angle of angles) {
-      const file = photoData[angle];
-      const path = `${id}/${angle.replace(/[^a-z0-9]/gi, "-")}-${Date.now()}.jpg`;
-      const { error: uploadErr } = await supabaseClient.storage
-        .from("foto-sepatu")
-        .upload(path, file);
-      if (uploadErr) throw uploadErr;
+    // 2. upload foto tiap pasang sepatu
+    let shoeIndex = 0;
+    for (const shoeId of shoeIds) {
+      shoeIndex += 1;
+      const shoe = shoes[shoeId];
+      const namaSepatu = shoe.label || `Sepatu ${shoeIndex}`;
+      const angles = Object.keys(shoe.photos);
 
-      const { data: publicUrlData } = supabaseClient.storage
-        .from("foto-sepatu")
-        .getPublicUrl(path);
+      for (const angle of angles) {
+        const file = shoe.photos[angle];
+        const path = `${id}/${shoeId}-${angle.replace(/[^a-z0-9]/gi, "-")}-${Date.now()}.jpg`;
+        const { error: uploadErr } = await supabaseClient.storage
+          .from("foto-sepatu")
+          .upload(path, file);
+        if (uploadErr) throw uploadErr;
 
-      const { error: photoErr } = await supabaseClient
-        .from("photos")
-        .insert({ ticket_id: id, angle, url_foto: publicUrlData.publicUrl });
-      if (photoErr) throw photoErr;
+        const { data: publicUrlData } = supabaseClient.storage
+          .from("foto-sepatu")
+          .getPublicUrl(path);
+
+        const { error: photoErr } = await supabaseClient
+          .from("photos")
+          .insert({ ticket_id: id, angle, url_foto: publicUrlData.publicUrl, nama_sepatu: namaSepatu });
+        if (photoErr) throw photoErr;
+      }
     }
 
-    // 3. redirect ke halaman lihat + link siap dibagikan
+    // 3. redirect ke halaman lihat
     window.location.href = `lihat-sepatu.html?id=${id}`;
   } catch (e) {
     console.error(e);

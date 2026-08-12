@@ -58,6 +58,30 @@ async function load() {
       ? new Date(ticket.tanggal_masuk + "T00:00:00").toLocaleDateString("id-ID", { dateStyle: "long" })
       : null;
 
+    // kelompokkan foto per nama_sepatu
+    const groups = {};
+    const groupOrder = [];
+    photos.forEach((p) => {
+      const key = p.nama_sepatu || "Sepatu";
+      if (!groups[key]) {
+        groups[key] = [];
+        groupOrder.push(key);
+      }
+      groups[key].push(p);
+    });
+
+    const groupsHtml = groupOrder.map((label) => `
+      <p class="section-label" style="margin-top:24px;">${escapeHtml(label)}</p>
+      <div class="view-grid" style="margin-top:0;">
+        ${groups[label].map(p => `
+          <figure>
+            <img src="${p.url_foto}" alt="${escapeHtml(p.angle || "")}" loading="lazy" />
+            <figcaption>${escapeHtml(p.angle || "")}</figcaption>
+          </figure>
+        `).join("")}
+      </div>
+    `).join("");
+
     content.innerHTML = `
       <header class="brand" style="flex-direction:column; text-align:center;">
         <div class="logo-circle" style="width:56px;height:56px;margin-bottom:8px;">
@@ -83,20 +107,13 @@ async function load() {
           <p class="v">${tanggalMasuk}</p>
         </div>` : ""}
         <div class="full">
-          <p class="k">Diambil</p>
-          <p class="v">${tanggal}</p>
+          <p class="k">Jumlah pasang</p>
+          <p class="v">${groupOrder.length} pasang</p>
         </div>
       </div>
       ${dots(true)}
 
-      <div class="view-grid">
-        ${photos.map(p => `
-          <figure>
-            <img src="${p.url_foto}" alt="${escapeHtml(p.angle || "")}" loading="lazy" />
-            <figcaption>${escapeHtml(p.angle || "")}</figcaption>
-          </figure>
-        `).join("")}
-      </div>
+      ${groupsHtml}
 
       ${photos.length === 0 ? `<p class="help-text">Belum ada foto untuk tiket ini.</p>` : ""}
 
