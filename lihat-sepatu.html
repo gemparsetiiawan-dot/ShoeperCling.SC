@@ -114,17 +114,7 @@ async function load() {
       ${groupsHtml}
 
       ${photos.length === 0 ? `<p class="help-text">Belum ada foto untuk tiket ini.</p>` : ""}
-
-      <button class="secondary" id="copyBtn" style="margin-top:24px;">Salin link tiket ini</button>
     `;
-
-    document.getElementById("copyBtn").addEventListener("click", () => {
-      navigator.clipboard.writeText(window.location.href).then(() => {
-        const btn = document.getElementById("copyBtn");
-        btn.textContent = "Link disalin ✓";
-        setTimeout(() => (btn.textContent = "Salin link tiket ini"), 1600);
-      });
-    });
   } catch (e) {
     console.error(e);
     content.innerHTML = `<div class="state-center"><h2>Tiket tidak ditemukan</h2><p>Link mungkin salah atau tiket sudah dihapus.</p></div>`;
